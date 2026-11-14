@@ -30,4 +30,9 @@ export default defineConfig([
     outDir: "dist/bin",
     ...shared,
   },
+  {
+    entry: ["src/bin/seed.ts"],
+    outDir: "dist/bin",
+    ...shared,
+  },
 ]);

@@ -1,4 +1,5 @@
 import { serve } from "@hono/node-server";
+import { serveStatic } from "@hono/node-server/serve-static";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { bodyLimit } from "hono/body-limit";
@@ -2293,22 +2294,60 @@ app.post("/webhooks/shipping/:businessId", async (c) => {
   return c.json({ ok: true, shipmentId: shipment.id });
 });
 
-// Base page — shows when someone visits the API root
-app.get("/", (c) => {
-  brandedHtmlHeaders(c);
-  return c.html(brandedHtml(
-    "API",
-    "Vrunda Infotech API",
-    "Enterprise billing and operations API server. The web dashboard is available at <a href=\"http://localhost:5173\">localhost:5173</a>",
-    200,
-  ));
-});
+// ── Web SPA Static File Serving ──────────────────────────────
+// In unified deployments (such as Render), the API server serves the built frontend
+// SPA from apps/web/dist when present, avoiding cross-domain cookies and CORS.
+const webDistCandidates = [
+  process.env.WEB_DIST_PATH,
+  path.resolve(process.cwd(), "apps/web/dist"),
+  path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../apps/web/dist"),
+  path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../apps/web/dist"),
+].filter(Boolean) as string[];
+
+const webDistDir = webDistCandidates.find((dir) => existsSync(path.join(dir, "index.html")));
+
+if (webDistDir) {
+  logger.info({ webDistDir }, "Serving Web SPA from static distribution directory");
+  // Serve static assets (/assets/*, favicon, etc.)
+  app.use("/*", serveStatic({ root: path.relative(process.cwd(), webDistDir) || webDistDir }));
+
+  // Catch-all for client-side SPA routing (index.html fallback)
+  app.get("/*", (c) => {
+    if (
+      c.req.path.startsWith("/api/") ||
+      c.req.path.startsWith("/store/") ||
+      c.req.path.startsWith("/webhooks/") ||
+      c.req.path.startsWith("/pay/") ||
+      c.req.path === "/health" ||
+      c.req.path === "/up"
+    ) {
+      return c.json({ error: "Not found" }, 404);
+    }
+    const html = readFileSync(path.join(webDistDir, "index.html"), "utf-8");
+    return c.html(html);
+  });
+} else {
+  // Base page — shows when someone visits the API root (dev mode or API-only deploy)
+  app.get("/", (c) => {
+    brandedHtmlHeaders(c);
+    return c.html(brandedHtml(
+      "API",
+      "Vrunda Infotech API",
+      "Enterprise billing and operations API server. The web dashboard is available at <a href=\"http://localhost:5173\">localhost:5173</a>",
+      200,
+    ));
+  });
+}
 
 // 404 handler — catch-all for unmatched routes
 app.notFound((c) => {
   // Return JSON for API-like paths
   if (c.req.path.startsWith("/api/") || c.req.path.startsWith("/store/")) {
     return c.json({ error: "Not found" }, 404);
+  }
+  if (webDistDir) {
+    const html = readFileSync(path.join(webDistDir, "index.html"), "utf-8");
+    return c.html(html);
   }
   brandedHtmlHeaders(c);
   return c.html(brandedHtml(

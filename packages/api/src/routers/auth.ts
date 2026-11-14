@@ -1168,15 +1168,27 @@ export const authRouter = router({
   }),
 });
 
+function getCookieSameSite(): { sameSite: string; secure: string } {
+  const custom = process.env.COOKIE_SAME_SITE;
+  if (custom) {
+    const isNone = custom.toLowerCase() === "none";
+    return { sameSite: custom, secure: (IS_SECURE || isNone) ? "; Secure" : "" };
+  }
+  if (process.env.CROSS_ORIGIN_COOKIES === "true") {
+    return { sameSite: "None", secure: "; Secure" };
+  }
+  return { sameSite: "Lax", secure: IS_SECURE ? "; Secure" : "" };
+}
+
 function setSessionCookie(headers: Headers, sessionId: string) {
-  const secure = IS_SECURE ? "; Secure" : "";
+  const { sameSite, secure } = getCookieSameSite();
   headers.set(
     "Set-Cookie",
-    `session_id=${sessionId}; Path=/; HttpOnly; SameSite=Lax${secure}; Max-Age=${30 * 24 * 60 * 60}`
+    `session_id=${sessionId}; Path=/; HttpOnly; SameSite=${sameSite}${secure}; Max-Age=${30 * 24 * 60 * 60}`
   );
 }
 
 function clearSessionCookie(headers: Headers) {
-  const secure = IS_SECURE ? "; Secure" : "";
-  headers.set("Set-Cookie", `session_id=; Path=/; HttpOnly; SameSite=Lax${secure}; Max-Age=0`);
+  const { sameSite, secure } = getCookieSameSite();
+  headers.set("Set-Cookie", `session_id=; Path=/; HttpOnly; SameSite=${sameSite}${secure}; Max-Age=0`);
 }

@@ -13,7 +13,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "maintenance": "tsx src/bin/maintenance.ts",
-    "admin": "tsx src/bin/admin.ts"
+    "admin": "tsx src/bin/admin.ts",
+    "seed": "tsx src/bin/seed.ts"
   },
   "dependencies": {
     "@casl/ability": "^6.8.1",

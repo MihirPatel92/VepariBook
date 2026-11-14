@@ -6,6 +6,8 @@
     "dev:mobile": "pnpm --filter @hisaabo/mobile dev",
     "dev:mobile:android": "pnpm --filter @hisaabo/mobile dev:android",
     "build": "turbo build",
+    "build:prod": "pnpm --filter @hisaabo/db build && pnpm --filter @hisaabo/api build && pnpm --filter @hisaabo/web build",
+    "seed": "pnpm --filter @hisaabo/api seed",
     "db:generate": "turbo db:generate",
     "db:migrate": "turbo db:migrate",
     "db:push": "pnpm --filter @hisaabo/db db:push",
