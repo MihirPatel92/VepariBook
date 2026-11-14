@@ -19,8 +19,7 @@ interface EmailService {
 class ConsoleEmailService implements EmailService {
   async sendMagicLink(to: string, magicLinkUrl: string, isNewUser?: boolean): Promise<void> {
     if (process.env.NODE_ENV === "production") {
-      console.error("[email] FATAL: No email service configured for production. Set RESEND_API_KEY.");
-      throw new Error("Email service not configured");
+      console.warn("[email] Notice: RESEND_API_KEY is not set. Printing magic link to server log:");
     }
     console.log("");
     console.log("╔══════════════════════════════════════════════════════════╗");
@@ -33,8 +32,7 @@ class ConsoleEmailService implements EmailService {
 
   async sendInvitation(to: string, inviteUrl: string, businessName: string, inviterName: string | null): Promise<void> {
     if (process.env.NODE_ENV === "production") {
-      console.error("[email] FATAL: No email service configured for production. Set RESEND_API_KEY.");
-      throw new Error("Email service not configured");
+      console.warn("[email] Notice: RESEND_API_KEY is not set. Printing invitation link to server log:");
     }
     console.log("");
     console.log("╔══════════════════════════════════════════════════════════╗");

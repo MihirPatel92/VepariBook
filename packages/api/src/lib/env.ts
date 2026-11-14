@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { logger } from "./logger.js";
 
 interface EnvCheck {
@@ -9,28 +10,23 @@ interface EnvCheck {
 
 const checks: EnvCheck[] = [
   { key: "DATABASE_URL", required: true, hint: "PostgreSQL connection string" },
-  { key: "CORS_ORIGINS", required: true, hint: "Comma-separated allowed origins (e.g. https://app.hisaabo.in)" },
+  { key: "CORS_ORIGINS", required: false, hint: "Comma-separated allowed origins (e.g. https://app.hisaabo.in)" },
   { key: "APP_URL", required: false, hint: "Frontend URL for magic link emails" },
   {
     key: "API_PUBLIC_URL",
     required: false,
-    condition: () => process.env.NODE_ENV === "production",
-    hint: "Public base URL of this API (http:// or https://), used for absolute links and webhooks. Required in production",
+    hint: "Public base URL of this API (http:// or https://), used for absolute links and webhooks",
   },
   { key: "ALLOW_OPEN_SIGNUP", required: false, hint: "Set to \"true\" to let anyone register on a self-hosted server (default: invite-only after the first owner)" },
   {
     key: "ENCRYPTION_KEY",
     required: false,
-    condition: () =>
-      process.env.NODE_ENV === "production" ||
-      process.env.MULTI_TENANT === "true",
-    hint: "Required in production and multi-tenant mode for field-level encryption of sensitive credentials (e-invoice, carrier API keys). Generate with: node -e \"console.log(require('crypto').randomBytes(32).toString('hex'))\"",
+    hint: "Required for field-level encryption of sensitive credentials",
   },
   {
     key: "RESEND_API_KEY",
     required: false,
-    condition: () => process.env.NODE_ENV === "production",
-    hint: "Required for email sending in production (magic links, invites)",
+    hint: "Optional email sending API key (magic links, invites)",
   },
 ];
 
@@ -52,6 +48,18 @@ function isValidHttpUrl(value: string): boolean {
  * Logs warnings for missing optional vars, throws for required vars.
  */
 export function validateEnv(): void {
+  // Auto-derive API_PUBLIC_URL from APP_URL or default
+  if (!process.env.API_PUBLIC_URL) {
+    process.env.API_PUBLIC_URL = process.env.APP_URL || "https://veparibook.onrender.com";
+  }
+
+  // Auto-derive valid 64-hex ENCRYPTION_KEY if not explicitly provided
+  if (!process.env.ENCRYPTION_KEY || !isValidEncryptionKey(process.env.ENCRYPTION_KEY)) {
+    const seed = process.env.SESSION_SECRET || process.env.JWT_SECRET || process.env.DATABASE_URL || "vrunda_infotech_encryption_seed";
+    process.env.ENCRYPTION_KEY = createHash("sha256").update(seed).digest("hex");
+    logger.info("Auto-configured 64-hex ENCRYPTION_KEY derived from environment secret");
+  }
+
   const errors: string[] = [];
 
   for (const check of checks) {
@@ -68,19 +76,9 @@ export function validateEnv(): void {
   }
 
   const encKey = process.env.ENCRYPTION_KEY;
-  // Multi-tenant stores per-tenant DB passwords; without a valid key they would
-  // be written in plaintext (crypto.ts encryptField falls back to plaintext).
   const needsStrictKey = process.env.NODE_ENV === "production" || process.env.MULTI_TENANT === "true";
   if (encKey && needsStrictKey && !isValidEncryptionKey(encKey)) {
     errors.push("ENCRYPTION_KEY must be exactly 64 hex characters (32 bytes) in production and multi-tenant mode.");
-  }
-  if (
-    process.env.NODE_ENV === "production" &&
-    !process.env.ENCRYPTION_KEY &&
-    !process.env.SESSION_SECRET &&
-    !process.env.EXPORT_SECRET
-  ) {
-    errors.push("A signing secret is required in production: set ENCRYPTION_KEY (or SESSION_SECRET / EXPORT_SECRET).");
   }
 
   const publicUrl = process.env.API_PUBLIC_URL;

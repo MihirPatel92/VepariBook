@@ -31,4 +31,6 @@ services:
       - key: CORS_ORIGINS
         value: "http://localhost:5173"
       - key: APP_URL
-        sync: false
+        value: https://veparibook.onrender.com
+      - key: API_PUBLIC_URL
+        value: https://veparibook.onrender.com
