@@ -167,33 +167,26 @@ export const tenantRouter = router({
       const tenantNameResult = await autoSelectTenantInSession(ctx.req, tenantId);
       return { tenantId, tenantName: tenantNameResult };
     } else {
-      // Self-hosted: join/create default tenant. Once the default tenant has
-      // an owner this needs a pending invitation unless open signup is on.
+      // Shared DB: create new isolated organization for this user
       let touchedTenantId: string | undefined;
-      const defaultTenantId = await controlDb.transaction(async (tx) => {
-        await lockSignup(tx);
+      const tenantName = `${displayName}'s Organization`;
+      const slug = generateSlug(tenantName);
 
-        let [defaultTenant] = await tx.select({ id: tenants.id })
-          .from(tenants).where(eq(tenants.slug, "default")).limit(1);
-        if (!defaultTenant) {
-          [defaultTenant] = await tx.insert(tenants).values({
-            name: "Default Organization", slug: "default",
-          }).returning({ id: tenants.id });
-        }
+      const newTenantId = await controlDb.transaction(async (tx) => {
+        const [tenant] = await tx.insert(tenants).values({
+          name: tenantName,
+          slug,
+          plan: "enterprise",
+        }).returning({ id: tenants.id });
 
-        const memberCount = await tx.select({ id: tenantMembers.id })
-          .from(tenantMembers).where(eq(tenantMembers.tenantId, defaultTenant.id));
-
-        if (memberCount.length > 0 && !isOpenSignupEnabled() && !(await hasPendingInvitation(tx, normalizeEmail(ctx.user.email)))) {
-          throw new TRPCError({ code: "FORBIDDEN", message: SIGNUP_CLOSED_MESSAGE });
-        }
-
-        touchedTenantId = defaultTenant.id;
+        touchedTenantId = tenant.id;
         await tx.insert(tenantMembers).values({
-          tenantId: defaultTenant.id, userId: ctx.user.id,
-          role: memberCount.length === 0 ? "owner" : "member", acceptedAt: new Date(),
+          tenantId: tenant.id,
+          userId: ctx.user.id,
+          role: "owner",
+          acceptedAt: new Date(),
         });
-        return defaultTenant.id;
+        return tenant.id;
       }).finally(() => {
         // After the transaction settled (commit or rollback).
         if (touchedTenantId) {
@@ -201,8 +194,8 @@ export const tenantRouter = router({
         }
       });
 
-      const tenantNameResult = await autoSelectTenantInSession(ctx.req, defaultTenantId);
-      return { tenantId: defaultTenantId, tenantName: tenantNameResult };
+      const tenantNameResult = await autoSelectTenantInSession(ctx.req, newTenantId);
+      return { tenantId: newTenantId, tenantName: tenantNameResult };
     }
   }),
 
