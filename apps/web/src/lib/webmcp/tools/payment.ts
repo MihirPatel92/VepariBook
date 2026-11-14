@@ -112,7 +112,7 @@ const paymentCreate: WebMcpToolDefinition = {
   name: "payment_create",
   title: "Record a payment",
   description: [
-    "Record money received from a customer or paid to a supplier. This moves real balances: the party's ledger, the invoice's amountPaid, and the invoice status, which Hisaabo recalculates to 'paid' or 'partial' by itself. Confirm the party, the amount and the date with the user before calling, and never use invoice_update_status to fake a payment.",
+    "Record money received from a customer or paid to a supplier. This moves real balances: the party's ledger, the invoice's amountPaid, and the invoice status, which Vrunda Infotech recalculates to 'paid' or 'partial' by itself. Confirm the party, the amount and the date with the user before calling, and never use invoice_update_status to fake a payment.",
     "Three ways to apply the money. One invoice: set invoiceId. Several invoices: leave invoiceId out and pass 'allocations', where the amounts should add up to 'amount' (call payment_unpaid_invoices first to get the per-invoice balances). Neither: an advance or on-account payment that sits against the party's balance until it is applied.",
     "'amount' and 'discount' are decimal strings with 2 decimals and no currency symbol ('5000.00'); amount must be greater than zero. 'discount' is a write-off settled alongside the payment, not a deduction from what was received. paymentDate defaults to today.",
     "Example: { partyId: '3f1c…', amount: '12700.00', mode: 'upi', referenceNumber: '432198765432', allocations: [{ invoiceId: '8a2d…', amount: '12700.00' }] }",
@@ -126,7 +126,7 @@ const paymentCreate: WebMcpToolDefinition = {
         "How the money moved: 'cash', 'bank' (NEFT/RTGS/IMPS transfer), 'upi', 'cheque', 'credit_card', 'debit_card', 'net_banking', 'wallet', or 'other'.",
       ),
       invoiceId: uuid(
-        "Apply the whole payment to this one invoice and let Hisaabo update its status. Leave out when using 'allocations' or when recording an advance.",
+        "Apply the whole payment to this one invoice and let Vrunda Infotech update its status. Leave out when using 'allocations' or when recording an advance.",
       ),
       allocations: {
         type: "array",

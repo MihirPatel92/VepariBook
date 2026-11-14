@@ -366,6 +366,7 @@ export const authRouter = router({
             email: emailLower,
             name: input.name,
             passwordHash,
+            emailVerified: true,
           }).returning({ id: users.id, email: users.email, name: users.name });
           touched.userId = user.id;
 

@@ -111,7 +111,7 @@ describe("BrowserAgentSection", () => {
     render(<BrowserAgentSection />);
 
     expect(
-      screen.getByRole("switch", { name: /Allow this browser.s AI agent to use Hisaabo/i }),
+      screen.getByRole("switch", { name: /Allow this browser.s AI agent to use Vrunda Infotech/i }),
     ).toBeInTheDocument();
   });
 });

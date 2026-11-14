@@ -4,8 +4,8 @@ import starlight from "@astrojs/starlight";
 export default defineConfig({
   integrations: [
     starlight({
-      title: "Hisaabo Docs",
-      description: "Documentation for Hisaabo — self-hosted invoicing for Indian businesses",
+      title: "Vrunda Infotech Docs",
+      description: "Documentation for Vrunda Infotech — Enterprise invoicing and billing",
       logo: {
         light: "./src/assets/logo-light.svg",
         dark: "./src/assets/logo-dark.svg",

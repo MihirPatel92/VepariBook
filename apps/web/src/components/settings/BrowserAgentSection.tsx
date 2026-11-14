@@ -45,7 +45,7 @@ export function BrowserAgentSection() {
             htmlFor="webmcp-toggle"
             className="text-sm font-medium text-text-primary cursor-pointer"
           >
-            Allow this browser&rsquo;s AI agent to use Hisaabo
+            Allow this browser&rsquo;s AI agent to use Vrunda Infotech
           </label>
           <p className="text-sm text-text-secondary mt-1 leading-relaxed">
             Off by default. When on, AI features built into Chrome or Edge can read your data

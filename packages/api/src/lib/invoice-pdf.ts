@@ -830,7 +830,7 @@ function generateA4Invoice(doc: InstanceType<typeof PDFDocument>, data: InvoiceP
       margin, footerY + 4, { width: contentW, align: "center" });
   if (!data.isPaidPlan) {
     doc.fontSize(5.5).font("NotoSans").fillColor("#b0b0b8")
-      .text("Powered by hisaabo.in", margin, footerY + 16, { width: contentW, align: "center" });
+      .text("Powered by Vrunda Infotech", margin, footerY + 16, { width: contentW, align: "center" });
   }
 }
 
@@ -1245,7 +1245,7 @@ function generateA5Invoice(doc: InstanceType<typeof PDFDocument>, data: InvoiceP
       { width: contentW, align: "center" });
   if (!data.isPaidPlan) {
     doc.fontSize(5.5).font("NotoSans").fillColor("#b0b0b8")
-      .text("Powered by hisaabo.in", margin, footerY + 14, { width: contentW, align: "center" });
+      .text("Powered by Vrunda Infotech", margin, footerY + 14, { width: contentW, align: "center" });
   }
 }
 
@@ -1452,7 +1452,7 @@ function generateThermalReceipt(doc: InstanceType<typeof PDFDocument>, data: Inv
   y += 8;
   if (!data.isPaidPlan) {
     doc.fontSize(5).font("NotoSans").fillColor("#b0b0b0")
-      .text("hisaabo.in", margin, y, { width: contentW, align: "center" });
+      .text("Vrunda Infotech", margin, y, { width: contentW, align: "center" });
     y += 8;
   } else {
     y += 4;
@@ -1568,7 +1568,7 @@ export function generateInvoicePDF(data: InvoicePDFData, format: PDFFormat = "a5
       Title: `Invoice ${data.invoiceNumber}`,
       Author: data.businessName,
       Subject: `Invoice for ${data.partyName}`,
-      Creator: "Hisaabo",
+      Creator: "Vrunda Infotech",
     },
   });
 

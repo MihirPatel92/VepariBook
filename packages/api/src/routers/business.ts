@@ -11,12 +11,16 @@ import { enforceBusinessLimit, enforceDataExport, getLimits } from "../lib/plan-
 import { seedChartOfAccounts } from "../lib/coa-seed.js";
 import { encryptCarrierCredentials, decryptCarrierCredentials } from "../lib/field-encryption.js";
 import { cacheBus } from "../lib/cache/bus.js";
-import { requireTenantRole, getTenantRole, hasRole, ADMIN_ROLES } from "../lib/tenant-access.js";
+import { requireTenantRole, getTenantRole, hasRole, ADMIN_ROLES, OWNER_ROLES } from "../lib/tenant-access.js";
 import { csvRow } from "@hisaabo/shared";
 import { getTenantMemberUserIds, businessTenantScope, assertBusinessInTenant } from "../lib/tenant-businesses.js";
 
 async function requireTenantAdmin(userId: string, tenantId: string) {
   await requireTenantRole({ user: { id: userId }, tenantId }, ADMIN_ROLES, "Only admins can manage businesses");
+}
+
+async function requireTenantOwner(ctx: { user: { id: string }; tenantId: string | null }) {
+  await requireTenantRole(ctx, OWNER_ROLES, "Only organization owners can create businesses");
 }
 
 type Creds = ReturnType<typeof decryptCarrierCredentials>;
@@ -53,8 +57,11 @@ export const businessRouter = router({
     }));
   }),
 
-  // Check if more businesses can be created in this tenant (plan limit).
+  // Check if more businesses can be created in this tenant (plan limit & role check).
   canCreate: tenantProcedure.query(async ({ ctx }) => {
+    const role = await getTenantRole(ctx.tenantId, ctx.user.id);
+    if (!hasRole(role, OWNER_ROLES)) return false;
+
     const [row] = await controlDb.select({ plan: tenants.plan }).from(tenants).where(eq(tenants.id, ctx.tenantId)).limit(1);
     const limits = getLimits(row?.plan ?? "free");
     if (limits.maxBusinesses === Infinity) return true;
@@ -88,7 +95,7 @@ export const businessRouter = router({
     }),
 
   create: tenantProcedure.input(createBusinessSchema).mutation(async ({ input, ctx }) => {
-    await requireTenantAdmin(ctx.user.id, ctx.tenantId!);
+    await requireTenantOwner(ctx);
     await enforceBusinessLimit(ctx.tenantId!, ctx.db);
     // `business` is emitted after the transaction settled (authz business
     // entries are positive-only, so this keeps the contract rather than fixing

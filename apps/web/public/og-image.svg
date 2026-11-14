@@ -46,36 +46,34 @@
         font-size="440" font-weight="900" fill="#818cf8" fill-opacity="0.07"
         text-anchor="end">₹</text>
 
-  <!-- Logo mark: 4-square grid (echoes favicon.svg exactly) -->
+  <!-- Logo mark: Vrunda Infotech monogram -->
   <g transform="translate(120, 165)">
     <!-- Drop shadow -->
     <rect x="0" y="10" width="300" height="300" rx="60" fill="#000000" fill-opacity="0.32"/>
     <!-- Brand rounded square -->
     <rect x="0" y="0" width="300" height="300" rx="60" fill="url(#logoMark)"/>
-    <!-- Top-left (bright) -->
-    <rect x="30" y="30" width="105" height="105" rx="20" fill="#ffffff" fill-opacity="0.96"/>
-    <!-- Top-right (mid) -->
-    <rect x="165" y="30" width="105" height="105" rx="20" fill="#ffffff" fill-opacity="0.58"/>
-    <!-- Bottom-left (mid) -->
-    <rect x="30" y="165" width="105" height="105" rx="20" fill="#ffffff" fill-opacity="0.58"/>
-    <!-- Bottom-right (gold accent) -->
-    <rect x="165" y="165" width="105" height="105" rx="20" fill="#fbbf24"/>
+    <!-- Left wing of V (white) -->
+    <path d="M70 80 L150 220" stroke="#ffffff" stroke-width="32" stroke-linecap="round"/>
+    <!-- Right wing of V (cyan) -->
+    <path d="M150 220 L230 80" stroke="#38bdf8" stroke-width="32" stroke-linecap="round"/>
+    <!-- Infotech node -->
+    <circle cx="230" cy="80" r="18" fill="#e0f2fe"/>
   </g>
 
-  <!-- Wordmark: Hisaabo -->
-  <text x="478" y="288" font-family="Lato, 'Helvetica Neue', Arial, sans-serif"
-        font-size="134" font-weight="900" fill="#ffffff" letter-spacing="-4">Hisaabo</text>
+  <!-- Wordmark: Vrunda Infotech -->
+  <text x="478" y="275" font-family="Lato, 'Helvetica Neue', Arial, sans-serif"
+        font-size="96" font-weight="900" fill="#ffffff" letter-spacing="-2">Vrunda Infotech</text>
 
-  <!-- Gold accent bar under wordmark -->
-  <rect x="482" y="308" width="132" height="6" rx="3" fill="url(#goldLine)"/>
+  <!-- Cyan accent bar under wordmark -->
+  <rect x="482" y="298" width="220" height="6" rx="3" fill="#38bdf8"/>
 
-  <!-- Tagline: Hisaab, pakka. -->
-  <text x="478" y="380" font-family="Lato, 'Helvetica Neue', Arial, sans-serif"
-        font-size="54" font-weight="700" font-style="italic" fill="#fbbf24">Hisaab, pakka.</text>
+  <!-- Tagline -->
+  <text x="478" y="365" font-family="Lato, 'Helvetica Neue', Arial, sans-serif"
+        font-size="44" font-weight="700" fill="#38bdf8">Enterprise Billing & Operations</text>
 
   <!-- Description line -->
-  <text x="480" y="432" font-family="Lato, 'Helvetica Neue', Arial, sans-serif"
-        font-size="27" font-weight="400" fill="#ffffff" fill-opacity="0.8">Fast, precise, GST-compliant invoicing for Indian businesses.</text>
+  <text x="480" y="420" font-family="Lato, 'Helvetica Neue', Arial, sans-serif"
+        font-size="26" font-weight="400" fill="#ffffff" fill-opacity="0.85">Fast, precise, GST-compliant invoicing for Indian enterprises.</text>
 
   <!-- Feature pills -->
   <!-- Pill 1: AI autopilot (agent-native, auto-runs your books) -->

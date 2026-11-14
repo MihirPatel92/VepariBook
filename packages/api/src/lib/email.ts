@@ -55,18 +55,18 @@ class ResendEmailService implements EmailService {
   ) {}
 
   async sendMagicLink(to: string, magicLinkUrl: string, isNewUser?: boolean): Promise<void> {
-    const subject = isNewUser ? "Welcome to Hisaabo" : "Sign in to Hisaabo";
+    const subject = isNewUser ? "Welcome to Vrunda Infotech" : "Sign in to Vrunda Infotech";
     const preheader = isNewUser
-      ? "Your business deserves pakka hisaab. Set up your account and start invoicing in under 2 minutes."
-      : "Sign in to your Hisaabo account. This link expires in 15 minutes.";
+      ? "Professional invoicing and operations. Set up your account and start invoicing in under 2 minutes."
+      : "Sign in to your Vrunda Infotech account. This link expires in 15 minutes.";
 
     // Welcome email: feature highlights + onboarding CTA
     // Returning user: simple sign-in CTA
     const mainContentHtml = isNewUser
       ? `<!-- Main content — welcome variant -->
 <tr><td style="padding: 28px 40px 0 40px;">
-<h1 style="margin: 0 0 12px 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 22px; font-weight: 700; color: #111827; text-align: center; line-height: 28px;">Your business deserves pakka hisaab.</h1>
-<p style="margin: 0 0 20px 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 15px; line-height: 24px; color: #4b5563; text-align: center;">Welcome to Hisaabo. You're one click away from professional invoicing that just works. Tap the button below to set up your business profile and send your first invoice today.</p>
+<h1 style="margin: 0 0 12px 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 22px; font-weight: 700; color: #111827; text-align: center; line-height: 28px;">Enterprise Billing & Operations</h1>
+<p style="margin: 0 0 20px 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 15px; line-height: 24px; color: #4b5563; text-align: center;">Welcome to Vrunda Infotech. You're one click away from professional invoicing that just works. Tap the button below to set up your business profile and send your first invoice today.</p>
 </td></tr>
 
 <!-- Feature highlights -->
@@ -88,12 +88,12 @@ class ResendEmailService implements EmailService {
 <p style="margin: 0 0 24px 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 15px; line-height: 24px; color: #4b5563; text-align: center;">Tap the button below to securely sign in. This link is single-use and expires in <strong style="color: #374151;">15 minutes</strong>.</p>
 </td></tr>`;
 
-    const ctaLabel = isNewUser ? "Start My Setup" : "Sign in to Hisaabo";
-    const ctaLabelOutlook = isNewUser ? "Start My Setup" : "Sign in to Hisaabo";
+    const ctaLabel = isNewUser ? "Start My Setup" : "Sign in to Vrunda Infotech";
+    const ctaLabelOutlook = isNewUser ? "Start My Setup" : "Sign in to Vrunda Infotech";
 
     // Reassurance line for new users only
     const reassuranceHtml = isNewUser
-      ? `<tr><td style="padding: 12px 40px 0 40px; text-align: center;"><p style="margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 13px; color: #6b7280;">Setup takes under 2 minutes. No payment required &mdash; Hisaabo is free.</p></td></tr>`
+      ? `<tr><td style="padding: 12px 40px 0 40px; text-align: center;"><p style="margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 13px; color: #6b7280;">Setup takes under 2 minutes. Powered by Vrunda Infotech.</p></td></tr>`
       : "";
 
     const res = await fetch("https://api.resend.com/emails", {
@@ -148,7 +148,7 @@ class ResendEmailService implements EmailService {
 </tr>
 </table>
 </td>
-<td height="36" style="padding-left: 12px; vertical-align: middle; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 22px; font-weight: 700; color: #111827; letter-spacing: -0.3px; line-height: 36px;">Hisaabo</td>
+<td height="36" style="padding-left: 12px; vertical-align: middle; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 22px; font-weight: 700; color: #111827; letter-spacing: -0.3px; line-height: 36px;">Vrunda Infotech</td>
 </tr>
 </table>
 </td></tr>
@@ -197,8 +197,8 @@ ${reassuranceHtml}
 <!-- Footer -->
 <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 480px; margin: 0 auto;">
 <tr><td style="padding: 24px 40px 0 40px; text-align: center;">
-<p style="margin: 0 0 4px 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 13px; font-weight: 600; color: #6b7280;">Hisaabo &mdash; <span style="color: #4f46e5;">Hisaab, pakka.</span></p>
-<p style="margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 12px; line-height: 18px; color: #9ca3af;">Free, open-source invoicing for Indian businesses</p>
+<p style="margin: 0 0 4px 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 13px; font-weight: 600; color: #6b7280;">Vrunda Infotech &mdash; <span style="color: #4f46e5;">Enterprise Billing</span></p>
+<p style="margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 12px; line-height: 18px; color: #9ca3af;">Enterprise billing and operations management</p>
 </td></tr>
 </table>
 
@@ -230,7 +230,7 @@ ${reassuranceHtml}
       body: JSON.stringify({
         from: this.fromAddress,
         to,
-        subject: `You've been invited to join ${businessName} on Hisaabo`,
+        subject: `You've been invited to join ${businessName} on Vrunda Infotech`,
         html: `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en">
 <head>
@@ -238,13 +238,13 @@ ${reassuranceHtml}
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta name="color-scheme" content="light dark" />
 <meta name="supported-color-schemes" content="light dark" />
-<title>You've been invited to join ${bizDisplay} on Hisaabo</title>
+<title>You've been invited to join ${bizDisplay} on Vrunda Infotech</title>
 <!--[if mso]><noscript><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml></noscript><![endif]-->
 </head>
 <body style="margin: 0; padding: 0; background-color: #f3f4f6; -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%;">
 
 <!-- Preheader text (hidden, shows in inbox preview) -->
-<div style="display: none; max-height: 0; overflow: hidden; font-size: 1px; line-height: 1px; color: #f3f4f6;">${fromDisplay} invited you to join ${bizDisplay} on Hisaabo. Accept your invitation to get started.&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;</div>
+<div style="display: none; max-height: 0; overflow: hidden; font-size: 1px; line-height: 1px; color: #f3f4f6;">${fromDisplay} invited you to join ${bizDisplay} on Vrunda Infotech. Accept your invitation to get started.&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;</div>
 
 <!-- Outer wrapper table for background -->
 <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f3f4f6;">
@@ -257,7 +257,6 @@ ${reassuranceHtml}
 <tr><td style="height: 4px; background: linear-gradient(90deg, #4f46e5 0%, #6366f1 50%, #4f46e5 100%); font-size: 0; line-height: 0;">&nbsp;</td></tr>
 
 <!-- Logo + brand mark -->
-<!-- Grid lockup is built from nested tables (not an image) so it renders identically in Gmail, Outlook, Apple Mail — no image-blocking, no external fetch, no broken alt. Matches favicon.svg: indigo rounded square with 4 inner squares, bottom-right in gold. Inner square colors are pre-blended (96%/58% white on #5b5bd6, plus amber) because some clients flatten layered opacity inconsistently. -->
 <tr><td style="padding: 32px 40px 0 40px; text-align: center;">
 <table role="presentation" border="0" cellpadding="0" cellspacing="0" align="center" style="margin: 0 auto;">
 <tr>
@@ -273,7 +272,7 @@ ${reassuranceHtml}
 </tr>
 </table>
 </td>
-<td height="36" style="padding-left: 12px; vertical-align: middle; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 22px; font-weight: 700; color: #111827; letter-spacing: -0.3px; line-height: 36px;">Hisaabo</td>
+<td height="36" style="padding-left: 12px; vertical-align: middle; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 22px; font-weight: 700; color: #111827; letter-spacing: -0.3px; line-height: 36px;">Vrunda Infotech</td>
 </tr>
 </table>
 </td></tr>
@@ -362,8 +361,8 @@ ${reassuranceHtml}
 <!-- Footer -->
 <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 480px; margin: 0 auto;">
 <tr><td style="padding: 24px 40px 0 40px; text-align: center;">
-<p style="margin: 0 0 4px 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 13px; font-weight: 600; color: #6b7280;">Hisaabo &mdash; <span style="color: #4f46e5;">Hisaab, pakka.</span></p>
-<p style="margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 12px; line-height: 18px; color: #9ca3af;">Free, open-source invoicing for Indian businesses</p>
+<p style="margin: 0 0 4px 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 13px; font-weight: 600; color: #6b7280;">Vrunda Infotech &mdash; <span style="color: #4f46e5;">Enterprise Billing</span></p>
+<p style="margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 12px; line-height: 18px; color: #9ca3af;">Enterprise billing and operations management</p>
 </td></tr>
 </table>
 
@@ -386,7 +385,7 @@ ${reassuranceHtml}
 
 function createEmailService(): EmailService {
   const resendKey = process.env.RESEND_API_KEY;
-  const fromAddress = process.env.EMAIL_FROM || "Hisaabo <noreply@hisaabo.in>";
+  const fromAddress = process.env.EMAIL_FROM || "Vrunda Infotech <noreply@vrundainfotech.com>";
 
   if (resendKey) {
     console.log("[email] Using Resend email service");

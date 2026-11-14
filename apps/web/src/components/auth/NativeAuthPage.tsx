@@ -22,7 +22,7 @@ function Shell({ children }: { children: React.ReactNode }) {
       <div className="w-full max-w-[380px] rounded-2xl p-8 shadow-elevated bg-surface-0 border border-border-light text-center">
         <div className="flex items-center justify-center gap-2.5 mb-8">
           <Logo className="w-9 h-9" />
-          <span className="font-semibold text-lg tracking-tight text-text-primary">Hisaabo</span>
+          <span className="font-semibold text-lg tracking-tight text-text-primary">Vrunda Infotech</span>
         </div>
         {children}
       </div>
@@ -92,7 +92,7 @@ export function NativeAuthPage() {
       <Shell>
         <Message
           title="Sign-in request expired"
-          body="This sign-in request is no longer valid. Go back to the Hisaabo app and start signing in again."
+          body="This sign-in request is no longer valid. Go back to the Vrunda Infotech app and start signing in again."
         />
       </Shell>
     );
@@ -111,7 +111,7 @@ export function NativeAuthPage() {
       <Shell>
         <Message
           title="You're signed in"
-          body="You can close this tab and return to Hisaabo."
+          body="You can close this tab and return to Vrunda Infotech."
         />
       </Shell>
     );
@@ -129,10 +129,10 @@ export function NativeAuthPage() {
   return (
     <Shell>
       <h1 className="text-lg font-semibold text-text-primary mb-2">
-        Sign in to Hisaabo {label} as {session?.user?.email}?
+        Sign in to Vrunda Infotech {label} as {session?.user?.email}?
       </h1>
       <p className="text-sm text-text-tertiary mb-6">
-        Only continue if you just started signing in from the Hisaabo {label} app.
+        Only continue if you just started signing in from the Vrunda Infotech {label} app.
       </p>
       <button
         type="button"

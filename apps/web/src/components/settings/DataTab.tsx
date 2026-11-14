@@ -131,7 +131,7 @@ function CsvExportSection({ canExport }: { canExport: boolean }) {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `hisaabo-export-${todayISODate()}.zip`;
+      a.download = `vrunda-infotech-export-${todayISODate()}.zip`;
       a.click();
       URL.revokeObjectURL(url);
       toast.success("Data exported successfully");

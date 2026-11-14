@@ -48,12 +48,11 @@ function SettingsPage() {
   const [onboardingPath, setOnboardingPath] = useState<"choose" | "create" | "restore">("choose");
   // The business being worked in (switchable in the sidebar), not simply the first one.
   const { business: biz } = useActiveBusiness();
-  const hasRole = ["owner", "admin", "superadmin"].includes(session?.role ?? "");
-  const { data: canCreateBizPlan } = trpc.business.canCreate.useQuery(undefined, {
-    enabled: !!session?.tenantId && hasRole,
-  });
-  const canCreateBusiness = hasRole && (canCreateBizPlan ?? true);
   const isOwner = session?.role === "owner" || session?.role === "superadmin";
+  const { data: canCreateBizPlan } = trpc.business.canCreate.useQuery(undefined, {
+    enabled: !!session?.tenantId && isOwner,
+  });
+  const canCreateBusiness = isOwner && (canCreateBizPlan ?? true);
   const canManageBusiness = useCan("manage", "Business");
   const canImport = useCan("manage", "Import");
   const canManageTeam = useCan("manage", "Team");
@@ -98,7 +97,7 @@ function SettingsPage() {
     if (onboardingPath === "restore" && isOwner && session?.tenantId) {
       return (
         <div>
-          <PageHeader title="Restore from backup" description="Import a previously exported Hisaabo backup" />
+          <PageHeader title="Restore from backup" description="Import a previously exported Vrunda Infotech backup" />
           <RestoreOnboarding
             tenantId={session.tenantId}
             onBack={() => setOnboardingPath("choose")}
@@ -178,7 +177,7 @@ function SettingsPage() {
             </span>
             <div>
               <p className="text-sm font-medium text-text-primary">Restore from a backup</p>
-              <p className="text-xs text-text-tertiary mt-0.5">Import a previously exported Hisaabo backup to restore all your data</p>
+              <p className="text-xs text-text-tertiary mt-0.5">Import a previously exported Vrunda Infotech backup to restore all your data</p>
             </div>
           </button>
         </div>
@@ -194,10 +193,10 @@ function SettingsPage() {
           <PageHeader title="Cannot create business" description="" />
           <div className="card px-6 py-8 text-center">
             <p className="text-sm text-text-primary font-medium mb-1">
-              Your role in this organization doesn't allow creating businesses.
+              Only organization owners can create businesses.
             </p>
             <p className="text-sm text-text-tertiary mb-4">
-              To create your own business, sign out and create a new organization at login.
+              Your role does not permit adding or creating businesses in this organization.
             </p>
             <button
               className="btn-ghost text-sm"

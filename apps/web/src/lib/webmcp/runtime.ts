@@ -107,7 +107,7 @@ function asTrpcError(err: unknown): TrpcLikeError | null {
 
 /** Strip anything that identifies our infrastructure before the agent sees it. */
 function sanitize(message: string): string {
-  return stripControlChars(message.replace(/\b(?:https?|wss?):\/\/\S+/gi, "the Hisaabo API")).trim();
+  return stripControlChars(message.replace(/\b(?:https?|wss?):\/\/\S+/gi, "the Vrunda Infotech API")).trim();
 }
 
 function formatValidation(fields: Record<string, string[] | undefined>): string {
@@ -145,7 +145,7 @@ function formatAgentError(err: unknown): string {
   if (err instanceof Error) {
     if (err.name === "AbortError") return "API error: the request was cancelled.";
     if (/failed to fetch|networkerror|load failed/i.test(err.message)) {
-      return "API error: unable to reach the Hisaabo API. Check the network connection.";
+      return "API error: unable to reach the Vrunda Infotech API. Check the network connection.";
     }
     return `API error: ${sanitize(err.message)}`;
   }
@@ -182,7 +182,7 @@ export async function confirmWrite(
     if (isConfirmHostMounted()) {
       return requestConfirmation({
         title,
-        description: `A browser AI agent wants to change your Hisaabo data. ${summary}`,
+        description: `A browser AI agent wants to change your Vrunda Infotech data. ${summary}`,
       });
     }
     return typeof window !== "undefined" && typeof window.confirm === "function"

@@ -66,11 +66,11 @@ function pageKeyForPath(pathname: string): PageKey | null {
 
 const hisaaboContext: WebMcpToolDefinition = {
   name: "hisaabo_context",
-  title: "Hisaabo context",
+  title: "Vrunda Infotech context",
   description: [
-    "Read who is signed in, which business is active, what page they are on, and the conventions every other Hisaabo tool uses. Call this first in a session — before any other tool — so you do not have to guess the user's role, the current financial year, or the money format.",
+    "Read who is signed in, which business is active, what page they are on, and the conventions every other Vrunda Infotech tool uses. Call this first in a session — before any other tool — so you do not have to guess the user's role, the current financial year, or the money format.",
     "Answers locally from the already-loaded app state: no network call, no permissions needed.",
-    "Money everywhere in Hisaabo is a decimal string with exactly the digits you mean — '1500.00', never 1500, never '₹1,500'. Dates sent to tools are ISO 8601 date-times ('2026-04-01T00:00:00.000Z'); the Indian financial year runs 1 April to 31 March.",
+    "Money everywhere in Vrunda Infotech is a decimal string with exactly the digits you mean — '1500.00', never 1500, never '₹1,500'. Dates sent to tools are ISO 8601 date-times ('2026-04-01T00:00:00.000Z'); the Indian financial year runs 1 April to 31 March.",
     "Example response: { userName: 'Asha', role: 'owner', businessId: '…', businessName: 'Sharma Traders', currentPage: 'invoices', todayIso: '2026-09-14', indianFinancialYear: '2026-27', currency: 'INR', moneyFormat: \"decimal strings e.g. '1500.00'\", tips: [...] }",
   ].join(" "),
   inputSchema: noInput(),
@@ -103,9 +103,9 @@ const hisaaboContext: WebMcpToolDefinition = {
 
 const appNavigate: WebMcpToolDefinition = {
   name: "app_navigate",
-  title: "Open a Hisaabo page",
+  title: "Open a Vrunda Infotech page",
   description: [
-    "Move the user's open Hisaabo tab to a page, optionally opening one record. Use it when the user asks to 'show', 'open' or 'go to' something, and after a write so they can see what was created.",
+    "Move the user's open Vrunda Infotech tab to a page, optionally opening one record. Use it when the user asks to 'show', 'open' or 'go to' something, and after a write so they can see what was created.",
     "This only changes the view — it reads and writes nothing. To get data, use the list/get tools instead; navigating does not return the page's contents.",
     `Only these pages open a specific record via 'id': ${ID_PAGES.join(", ")}. For any other page, omit 'id' (passing one is an error). The 'id' must be the UUID of a record of that page's own type — an invoice UUID for 'invoices', a payment UUID for 'payments'.`,
     "Example: { page: 'invoices', id: '3f1c2b90-4d2e-4a1b-9c77-0b2e9d5a1f44' } opens /invoices?id=3f1c…",
@@ -116,7 +116,7 @@ const appNavigate: WebMcpToolDefinition = {
         type: "string",
         enum: PAGE_KEYS,
         description:
-          "Which Hisaabo screen to open. 'dashboard' is the home overview; 'gst' is GST returns / tax reports; 'reports' is business reports; 'cash-and-bank' is cash and bank accounts.",
+          "Which Vrunda Infotech screen to open. 'dashboard' is the home overview; 'gst' is GST returns / tax reports; 'reports' is business reports; 'cash-and-bank' is cash and bank accounts.",
       },
       id: uuid(
         `UUID of the record to open in the detail panel. Only valid for: ${ID_PAGES.join(", ")}.`,

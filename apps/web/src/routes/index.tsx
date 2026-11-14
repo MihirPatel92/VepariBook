@@ -1235,7 +1235,7 @@ function DashboardPage() {
   if (!data) {
     return (
       <EmptyState
-        title="Welcome to Hisaabo"
+        title="Welcome to Vrunda Infotech"
         description="Set up your business to start creating invoices and tracking payments."
         action={
           <Link to="/settings" className="btn-primary">

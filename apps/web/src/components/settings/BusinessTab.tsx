@@ -46,6 +46,8 @@ export function BusinessTab({ biz }: BusinessTabProps) {
 function BusinessCard({ biz, onEdit }: { biz: any; onEdit: () => void }) {
   // business.update is tenant-admin only (manage:Business).
   const canEdit = useCan("manage", "Business");
+  const { data: session } = trpc.auth.me.useQuery();
+  const isOwner = session?.role === "owner" || session?.role === "superadmin";
   const fields: [string, string | undefined | null][] = [
     ["Legal Name", biz.legalName],
     ["GSTIN", biz.gstin],
@@ -63,7 +65,21 @@ function BusinessCard({ biz, onEdit }: { biz: any; onEdit: () => void }) {
     <div className="card p-6">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-base font-semibold text-text-primary">{biz.name}</h3>
-        {canEdit && <button className="btn-secondary" onClick={onEdit}>Edit</button>}
+        <div className="flex items-center gap-2">
+          {isOwner && (
+            <button
+              type="button"
+              className="btn-primary text-xs flex items-center gap-1.5"
+              onClick={() => window.dispatchEvent(new CustomEvent("create-business"))}
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+              </svg>
+              <span>Add Business</span>
+            </button>
+          )}
+          {canEdit && <button type="button" className="btn-secondary text-xs" onClick={onEdit}>Edit</button>}
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-x-8 gap-y-3 text-sm">

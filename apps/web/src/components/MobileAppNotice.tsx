@@ -80,11 +80,11 @@ export function MobileAppNotice({
         id="mobile-app-notice-title"
         className="mt-6 text-xl font-semibold text-text-primary"
       >
-        Use the Hisaabo mobile app
+        Use the Vrunda Infotech mobile app
       </h1>
       <p className="mt-2 max-w-xs text-sm text-text-secondary">
         The web dashboard is designed for larger screens. For the best
-        experience on your phone, get the Hisaabo app.
+        experience on your phone, get the Vrunda Infotech app.
       </p>
 
       <a

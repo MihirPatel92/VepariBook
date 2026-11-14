@@ -113,7 +113,7 @@ const partyCreate: WebMcpToolDefinition = {
       city: { type: "string", maxLength: 100, description: "City." },
       state: { type: "string", maxLength: 100, description: "State — drives CGST/SGST vs IGST on their invoices." },
       pincode: { type: "string", maxLength: 10, description: "PIN code." },
-      openingBalance: money("Balance carried in from before Hisaabo. Positive = they owe you, negative = you owe them. Defaults to '0'.", true),
+      openingBalance: money("Balance carried in from before Vrunda Infotech. Positive = they owe you, negative = you owe them. Defaults to '0'.", true),
       category: { type: "string", maxLength: 100, description: "Grouping tag, e.g. 'retail', 'wholesale', 'government'." },
       creditPeriodDays: {
         type: "integer",

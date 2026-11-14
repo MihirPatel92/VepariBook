@@ -1,37 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState } from "react";
 import { trpc } from "@/lib/trpc";
-import { TurnstileModal } from "@/components/ui/TurnstileModal";
 import { isDesktop } from "@/lib/isDesktop";
 import { DesktopSignIn } from "@/components/auth/DesktopSignIn";
 import { SignupHint } from "@/components/auth/SignupHint";
-
-/* ─── Turnstile type (declared in TurnstileModal) ──────────────────────── */
-declare global {
-  interface Window {
-    turnstile?: {
-      render: (
-        el: HTMLElement,
-        opts: {
-          sitekey: string;
-          size: "normal" | "flexible" | "compact";
-          callback: (token: string) => void;
-          "error-callback"?: () => void;
-          "expired-callback"?: () => void;
-          theme?: "light" | "dark" | "auto";
-        },
-      ) => string;
-      reset: (widgetId: string) => void;
-      remove: (widgetId: string) => void;
-    };
-  }
-}
+import { Logo } from "@/components/ui/Logo";
 
 export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
-
-type AuthMode = "magic-link" | "magic-link-sent";
 
 /* ─── Pure-CSS animation keyframes injected once ─────────────────────────── */
 const KEYFRAMES = `
@@ -264,21 +241,14 @@ function BrandPanel() {
                 width: 44,
                 height: 44,
                 borderRadius: 12,
-                background: "rgba(255,255,255,0.15)",
-                border: "1px solid rgba(255,255,255,0.2)",
+                overflow: "hidden",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                backdropFilter: "blur(8px)",
-                boxShadow: "0 4px 16px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.25)",
+                boxShadow: "0 4px 16px rgba(0,0,0,0.25)",
               }}
             >
-              <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-                <rect x="2" y="2" width="8" height="8" rx="2" fill="white" opacity="0.9" />
-                <rect x="12" y="2" width="8" height="8" rx="2" fill="white" opacity="0.6" />
-                <rect x="2" y="12" width="8" height="8" rx="2" fill="white" opacity="0.6" />
-                <rect x="12" y="12" width="8" height="8" rx="2" fill="#fbbf24" opacity="0.9" />
-              </svg>
+              <Logo className="w-11 h-11" />
             </div>
             <span
               style={{
@@ -289,7 +259,7 @@ function BrandPanel() {
                 letterSpacing: "-0.03em",
               }}
             >
-              Hisaabo
+              Vrunda Infotech
             </span>
           </div>
 
@@ -370,14 +340,12 @@ function BrandPanel() {
               animation: "tagline-reveal 1.2s ease-out forwards",
             }}
           >
-            Hisaab, pakka.
+            Enterprise Billing & Operations
           </p>
 
           <div style={{ display: "flex", gap: 20 }}>
             {[
               { n: "GST Ready", icon: "✓" },
-              { n: "100% Free", icon: "✓" },
-              { n: "Open Source", icon: "✓" },
             ].map(({ n, icon }) => (
               <div
                 key={n}
@@ -432,20 +400,14 @@ function MobileBrandStrip() {
           width: 36,
           height: 36,
           borderRadius: 10,
-          background: "rgba(255,255,255,0.15)",
-          border: "1px solid rgba(255,255,255,0.2)",
+          overflow: "hidden",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           flexShrink: 0,
         }}
       >
-        <svg width="18" height="18" viewBox="0 0 22 22" fill="none">
-          <rect x="2" y="2" width="8" height="8" rx="2" fill="white" opacity="0.9" />
-          <rect x="12" y="2" width="8" height="8" rx="2" fill="white" opacity="0.6" />
-          <rect x="2" y="12" width="8" height="8" rx="2" fill="white" opacity="0.6" />
-          <rect x="12" y="12" width="8" height="8" rx="2" fill="#fbbf24" opacity="0.9" />
-        </svg>
+        <Logo className="w-9 h-9" />
       </div>
       <div>
         <div
@@ -457,7 +419,7 @@ function MobileBrandStrip() {
             letterSpacing: "-0.03em",
           }}
         >
-          Hisaabo
+          Vrunda Infotech
         </div>
         <div
           style={{
@@ -468,7 +430,7 @@ function MobileBrandStrip() {
             textTransform: "uppercase",
           }}
         >
-          Hisaab, pakka.
+          Enterprise Billing
         </div>
       </div>
     </div>
@@ -515,14 +477,13 @@ function Field({
 
 /* ─── Main page ───────────────────────────────────────────────────────────── */
 function LoginPage() {
-  const [mode, setMode] = useState<AuthMode>("magic-link");
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [cooldown, setCooldown] = useState(0);
-  const cooldownRef = useRef<ReturnType<typeof setInterval>>(undefined);
   const { data: systemConfig } = trpc.system.config.useQuery();
   const signupOpen = systemConfig?.signupOpen;
   const desktop = isDesktop();
+  const utils = trpc.useUtils();
 
   // Show session-expired banner if redirected from a revoked session
   const [sessionExpired] = useState(() => {
@@ -531,75 +492,23 @@ function LoginPage() {
     return expired;
   });
 
-  // ── Turnstile modal (bot protection) ──────────────────────────
-  // Form handlers save a pending action and open the modal.
-  // On Turnstile success, the pending action fires with the token.
-  const [showTurnstile, setShowTurnstile] = useState(false);
-  const pendingActionRef = useRef<((token: string | undefined) => void) | null>(null);
-
-  const handleTurnstileVerified = useCallback((token: string) => {
-    setShowTurnstile(false);
-    if (pendingActionRef.current) {
-      pendingActionRef.current(token);
-      pendingActionRef.current = null;
-    }
-  }, []);
-
-  /** Wraps a form submission: opens the Turnstile modal, then fires the action with the token. */
-  function withTurnstile(action: (token: string | undefined) => void) {
-    pendingActionRef.current = action;
-    setShowTurnstile(true);
-  }
-
-  const magicLinkMutation = trpc.auth.sendMagicLink.useMutation({
-    onSuccess: () => {
-      setMode("magic-link-sent");
-      setCooldown(60);
-      setError("");
+  const loginMutation = trpc.auth.login.useMutation({
+    onSuccess: async () => {
+      await utils.auth.me.invalidate();
+      const pendingInviteToken = sessionStorage.getItem("pendingInviteToken");
+      if (pendingInviteToken) {
+        window.location.href = `/invite/${pendingInviteToken}`;
+      } else {
+        window.location.href = "/";
+      }
     },
     onError: (e) => setError(e.message),
   });
 
-  // Cooldown timer for resend
-  useEffect(() => {
-    if (cooldown <= 0) {
-      clearInterval(cooldownRef.current);
-      return;
-    }
-    cooldownRef.current = setInterval(() => {
-      setCooldown((c) => {
-        if (c <= 1) {
-          clearInterval(cooldownRef.current);
-          return 0;
-        }
-        return c - 1;
-      });
-    }, 1000);
-    return () => clearInterval(cooldownRef.current);
-  }, [cooldown > 0]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const isPending =
-    magicLinkMutation.isPending;
-
-  function handleMagicLink(e: React.FormEvent) {
+  function handlePasswordLogin(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    withTurnstile((token) => {
-      magicLinkMutation.mutate({ email, turnstileToken: token });
-    });
-  }
-
-  function handleResend() {
-    if (cooldown > 0) return;
-    withTurnstile((token) => {
-      magicLinkMutation.mutate({ email, turnstileToken: token });
-      setCooldown(60);
-    });
-  }
-
-  function switchMode(next: AuthMode) {
-    setMode(next);
-    setError("");
+    loginMutation.mutate({ email, password });
   }
 
   return (
@@ -625,8 +534,7 @@ function LoginPage() {
 
             {desktop && <DesktopSignIn signupOpen={signupOpen} />}
 
-            {/* ── Mode: magic-link ────────────────────────────────── */}
-            {!desktop && mode === "magic-link" && (
+            {!desktop && (
               <div style={{ animation: "form-enter 0.35s ease-out" }}>
                 {new URLSearchParams(window.location.search).get("invite") === "1" && (
                   <div className="mb-5 px-4 py-3 rounded-xl text-sm bg-brand-600/[0.06] border border-brand-600/20 text-brand-700 dark:text-brand-400">
@@ -635,21 +543,21 @@ function LoginPage() {
                       : "You've been invited to join an organization! Sign in with the email address where you received the invitation."}
                   </div>
                 )}
-                <div className="mb-8">
+                <div className="mb-6">
                   <h1
                     className="text-2xl font-bold text-text-primary mb-2"
                     style={{ letterSpacing: "-0.03em" }}
                   >
-                    Sign in to Hisaabo
+                    Sign in to Vrunda Infotech
                   </h1>
                   <p className="text-sm text-text-tertiary leading-relaxed">
-                    Enter your email and we'll send you a one-click sign-in link.
+                    Enter your email and password to access your account.
                   </p>
                 </div>
 
                 {error && <ErrorBanner message={error} />}
 
-                <form onSubmit={handleMagicLink} className="space-y-4">
+                <form onSubmit={handlePasswordLogin} className="space-y-4">
                   <Field label="Email address">
                     <input
                       type="email"
@@ -658,24 +566,29 @@ function LoginPage() {
                       required
                       autoFocus
                       className="input"
-                      placeholder="you@yourcompany.com"
+                      placeholder="Contact@vrundainfotech.com"
                     />
                   </Field>
 
-                  <PrimaryButton type="submit" disabled={isPending} fullWidth>
-                    {isPending ? (
+                  <Field label="Password">
+                    <input
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      className="input"
+                      placeholder="••••••••"
+                    />
+                  </Field>
+
+                  <PrimaryButton type="submit" disabled={loginMutation.isPending} fullWidth>
+                    {loginMutation.isPending ? (
                       <>
-                        Sending link
+                        Signing in
                         <LoadingDots />
                       </>
                     ) : (
-                      <>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M22 2L11 13" />
-                          <polygon points="22 2 15 22 11 13 2 9 22 2" />
-                        </svg>
-                        Send magic link
-                      </>
+                      "Sign in"
                     )}
                   </PrimaryButton>
                 </form>
@@ -684,163 +597,9 @@ function LoginPage() {
               </div>
             )}
 
-            {/* ── Mode: magic-link-sent ───────────────────────────── */}
-            {!desktop && mode === "magic-link-sent" && (
-              <div
-                className="text-center"
-                style={{ animation: "form-enter 0.4s ease-out" }}
-              >
-                {/* Animated envelope ring */}
-                <div
-                  className="mx-auto mb-6"
-                  style={{
-                    width: 80,
-                    height: 80,
-                    position: "relative",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  {/* Outer ring */}
-                  <div
-                    style={{
-                      position: "absolute",
-                      inset: 0,
-                      borderRadius: "50%",
-                      border: "2px solid",
-                      borderColor: "#5b5bd6",
-                      opacity: 0.2,
-                      animation: "ring-expand 0.5s ease-out forwards",
-                    }}
-                  />
-                  {/* Inner circle */}
-                  <div
-                    style={{
-                      width: 64,
-                      height: 64,
-                      borderRadius: "50%",
-                      background: "linear-gradient(135deg, #ebebff, #d4d4ff)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      animation: "envelope-rise 0.5s ease-out forwards",
-                    }}
-                    className="dark:!bg-none"
-                  >
-                    <div
-                      style={{
-                        width: 64,
-                        height: 64,
-                        borderRadius: "50%",
-                        background: "linear-gradient(135deg, rgba(91,91,214,0.15), rgba(91,91,214,0.25))",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <svg
-                        width="28"
-                        height="28"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="#5b5bd6"
-                        strokeWidth="1.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
-                      </svg>
-                    </div>
-                  </div>
-                </div>
-
-                <h1
-                  className="text-2xl font-bold text-text-primary mb-2"
-                  style={{ letterSpacing: "-0.03em" }}
-                >
-                  Check your email
-                </h1>
-                <p className="text-sm text-text-tertiary mb-1">
-                  We sent a magic sign-in link to
-                </p>
-                <p
-                  className="text-sm font-semibold text-text-primary mb-1"
-                  style={{ fontFamily: "JetBrains Mono, monospace", fontSize: 13 }}
-                >
-                  {email}
-                </p>
-
-                {/* Animated shimmer progress bar */}
-                <div
-                  className="mx-auto mt-5 mb-5 rounded-full overflow-hidden"
-                  style={{
-                    height: 3,
-                    background: "var(--surface-2)",
-                    maxWidth: 200,
-                  }}
-                >
-                  <div
-                    style={{
-                      height: "100%",
-                      background: "linear-gradient(90deg, #5b5bd6, #fbbf24, #5b5bd6)",
-                      animation: "shimmer-bar 3s ease-in-out infinite",
-                      borderRadius: "inherit",
-                    }}
-                  />
-                </div>
-
-                <p className="text-xs text-text-tertiary mb-6">
-                  The link expires in 15 minutes. Check your spam folder if you don't see it.
-                </p>
-
-                {/* Resend button */}
-                <button
-                  onClick={handleResend}
-                  disabled={cooldown > 0 || magicLinkMutation.isPending}
-                  className="btn-primary w-full py-2.5 mb-3"
-                  style={{ justifyContent: "center" }}
-                >
-                  {cooldown > 0 ? (
-                    <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                        <circle cx="12" cy="12" r="10" />
-                        <polyline points="12 6 12 12 16 14" />
-                      </svg>
-                      Resend in {cooldown}s
-                    </span>
-                  ) : magicLinkMutation.isPending ? (
-                    <>
-                      Sending
-                      <LoadingDots />
-                    </>
-                  ) : (
-                    "Didn't receive it? Send again"
-                  )}
-                </button>
-
-                <button
-                  onClick={() => switchMode("magic-link")}
-                  className="text-sm text-text-tertiary hover:text-text-secondary transition-colors"
-                >
-                  Use a different email
-                </button>
-              </div>
-            )}
-
           </div>
         </div>
       </div>
-
-      {/* Turnstile bot protection modal */}
-      <TurnstileModal
-        open={showTurnstile}
-        onVerified={handleTurnstileVerified}
-        onClose={() => {
-          setShowTurnstile(false);
-          pendingActionRef.current = null;
-        }}
-      />
     </>
   );
 }

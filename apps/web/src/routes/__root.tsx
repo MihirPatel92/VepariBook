@@ -171,7 +171,7 @@ function NoOrgScreen() {
       <div className="w-full max-w-[400px] rounded-2xl p-8 shadow-elevated bg-surface-0 border border-border-light">
         <div className="flex items-center justify-center gap-2.5 mb-6">
           <Logo className="w-9 h-9" />
-          <span className="font-semibold text-lg tracking-tight text-text-primary">Hisaabo</span>
+          <span className="font-semibold text-lg tracking-tight text-text-primary">Vrunda Infotech</span>
         </div>
 
         {invitesLoading ? (
@@ -364,7 +364,7 @@ function RootLayout() {
     enabled: !!session?.user,
   });
   const { data: canCreateBiz } = trpc.business.canCreate.useQuery(undefined, {
-    enabled: !!session?.user && !!session?.tenantId,
+    enabled: !!session?.user && !!session?.tenantId && (session?.role === "owner" || session?.role === "superadmin"),
   });
 
   const navigate = useNavigate();
@@ -668,7 +668,7 @@ function RootLayout() {
           <div className="flex items-center gap-2.5">
             <Logo className="w-8 h-8" />
             <span className="font-semibold text-[15px] tracking-tight text-text-primary">
-              Hisaabo
+              Vrunda Infotech
             </span>
           </div>
         </div>
@@ -758,7 +758,7 @@ function RootLayout() {
           {isOnboarding && (
             <div className="flex items-center gap-2.5 mr-2">
               <Logo className="w-7 h-7" />
-              <span className="font-semibold text-[15px] tracking-tight text-text-primary">Hisaabo</span>
+              <span className="font-semibold text-[15px] tracking-tight text-text-primary">Vrunda Infotech</span>
             </div>
           )}
 
@@ -794,7 +794,7 @@ function RootLayout() {
                 businesses={businesses.map((b) => ({ id: b.id, name: b.name }))}
                 activeBusinessId={currentBusinessId ?? businesses[0].id}
                 onSwitch={handleBusinessSwitch}
-                onCreateNew={canCreateBiz && canAccess(session?.role, "Business", "manage") ? () => {
+                onCreateNew={(session?.role === "owner" || session?.role === "superadmin") && canCreateBiz ? () => {
                   if (pathname === "/settings") {
                     window.dispatchEvent(new CustomEvent("create-business"));
                   } else {

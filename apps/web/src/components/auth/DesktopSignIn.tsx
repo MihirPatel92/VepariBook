@@ -62,7 +62,7 @@ export function DesktopSignIn({ signupOpen }: { signupOpen: boolean | undefined 
     <div style={{ animation: "form-enter 0.35s ease-out" }}>
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-text-primary mb-2" style={{ letterSpacing: "-0.03em" }}>
-          Sign in to Hisaabo
+          Sign in to Vrunda Infotech
         </h1>
         <p className="text-sm text-text-tertiary leading-relaxed">
           Sign-in happens in your browser. When you finish there, you will come back here automatically.

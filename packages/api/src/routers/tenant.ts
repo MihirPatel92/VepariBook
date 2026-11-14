@@ -34,12 +34,13 @@ async function autoSelectTenantInSession(req: Request, tenantId: string): Promis
 }
 
 async function assertEmailVerified(userId: string): Promise<void> {
+  if (!process.env.RESEND_API_KEY) return;
   const [row] = await controlDb.select({ emailVerified: users.emailVerified })
     .from(users).where(eq(users.id, userId)).limit(1);
   if (!row?.emailVerified) {
     throw new TRPCError({
       code: "FORBIDDEN",
-      message: "Verify your email address (sign in with an email link) before accepting an invitation",
+      message: "Verify your email address before accepting an invitation",
     });
   }
 }
@@ -477,6 +478,7 @@ export const tenantRouter = router({
       const [invitation] = await controlDb.select({
         role: invitations.role,
         tenantId: invitations.tenantId,
+        email: invitations.email,
         acceptedAt: invitations.acceptedAt,
       })
         .from(invitations)
@@ -486,16 +488,24 @@ export const tenantRouter = router({
         ))
         .limit(1);
 
-      if (!invitation || invitation.acceptedAt) return null;
+      if (!invitation) return null;
 
       const [tenant] = await controlDb.select({ name: tenants.name })
         .from(tenants)
         .where(eq(tenants.id, invitation.tenantId))
         .limit(1);
 
+      const [existingUser] = await controlDb.select({ id: users.id })
+        .from(users)
+        .where(emailEq(users.email, invitation.email))
+        .limit(1);
+
       return {
         tenantName: tenant?.name ?? "Organization",
         role: invitation.role,
+        email: invitation.email,
+        hasAccount: !!existingUser,
+        alreadyAccepted: !!invitation.acceptedAt,
       };
     }),
 

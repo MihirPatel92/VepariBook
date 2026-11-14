@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" version="1.2" baseProfile="tiny-ps" viewBox="0 0 32 32">
-  <title>Hisaabo</title>
-  <rect width="32" height="32" rx="16" fill="#5b5bd6"/>
-  <rect x="6.5" y="6.5" width="8.5" height="8.5" rx="1.5" fill="#ffffff" fill-opacity="0.92"/>
-  <rect x="17" y="6.5" width="8.5" height="8.5" rx="1.5" fill="#ffffff" fill-opacity="0.62"/>
-  <rect x="6.5" y="17" width="8.5" height="8.5" rx="1.5" fill="#ffffff" fill-opacity="0.62"/>
-  <rect x="17" y="17" width="8.5" height="8.5" rx="1.5" fill="#fbbf24"/>
+  <title>Vrunda Infotech</title>
+  <rect width="32" height="32" rx="16" fill="#1e3a8a"/>
+  <path d="M7.5 8.5 L16 23.5" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round"/>
+  <path d="M16 23.5 L24.5 8.5" stroke="#38bdf8" stroke-width="3.5" stroke-linecap="round"/>
+  <circle cx="24.5" cy="8.5" r="2" fill="#e0f2fe"/>
 </svg>

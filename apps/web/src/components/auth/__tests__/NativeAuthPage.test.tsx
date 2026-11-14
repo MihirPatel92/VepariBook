@@ -43,7 +43,7 @@ describe("NativeAuthPage", () => {
 
   it("shows the consent screen for a signed-in user and cleans the URL", () => {
     render(<NativeAuthPage />);
-    expect(screen.getByText(/Sign in to Hisaabo Desktop as a@b.com\?/)).toBeInTheDocument();
+    expect(screen.getByText(/Sign in to Vrunda Infotech Desktop as a@b.com\?/)).toBeInTheDocument();
     expect(window.location.search).toBe("");
     expect(screen.getByRole("button", { name: "Continue" })).toBeInTheDocument();
   });
@@ -72,7 +72,7 @@ describe("NativeAuthPage", () => {
     sessionStorage.setItem("nativeAuthRequest", ID);
     window.history.replaceState({}, "", "/auth/native");
     render(<NativeAuthPage />);
-    expect(screen.getByText(/Sign in to Hisaabo Desktop/)).toBeInTheDocument();
+    expect(screen.getByText(/Sign in to Vrunda Infotech Desktop/)).toBeInTheDocument();
   });
 
   it("shows an expired state for unknown requests", () => {
