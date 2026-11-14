@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { controlDb, tenants, tenantMembers, invitations, users, sessions, apiKeys, provisionTenantDatabase, cleanupTenantDatabase } from "@hisaabo/db";
-import { eq, and, gt, isNull, desc } from "drizzle-orm";
+import { eq, and, gt, isNull, desc, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { createHash } from "node:crypto";
 import { router, publicProcedure, protectedProcedure, tenantProcedure } from "../trpc.js";
@@ -12,6 +12,7 @@ import { normalizeEmail, emailEq } from "../lib/normalize-email.js";
 import { emailService } from "../lib/email.js";
 import { lockSignup, isOpenSignupEnabled, hasPendingInvitation, SIGNUP_CLOSED_MESSAGE } from "../lib/signup-policy.js";
 import { enforceTeamMemberLimit, enforceOrgCreationLimit, getLimits } from "../lib/plan-limits.js";
+import { isPlatformOwner } from "../lib/platform-owner.js";
 
 function hashInvitationToken(token: string): string {
   return createHash("sha256").update(token).digest("hex");
@@ -108,6 +109,9 @@ export const tenantRouter = router({
   // Create a new organization for the authenticated user.
   // User becomes the owner. In self-hosted mode, joins the default tenant instead.
   create: protectedProcedure.mutation(async ({ ctx }) => {
+    if (!isPlatformOwner(ctx.user)) {
+      throw new TRPCError({ code: "FORBIDDEN", message: "Only the platform owner can create organizations" });
+    }
     await enforceOrgCreationLimit(ctx.user.id);
     const displayName = ctx.user.name ?? ctx.user.email.split("@")[0];
 
@@ -199,8 +203,10 @@ export const tenantRouter = router({
     }
   }),
 
-  // Check if the user can create a new org (plan limit not reached).
+  // Check if the user can create a new org (only platform owner).
   canCreateOrg: protectedProcedure.query(async ({ ctx }) => {
+    if (!isPlatformOwner(ctx.user)) return false;
+
     const ownedOrgs = await controlDb.select({ plan: tenants.plan })
       .from(tenantMembers)
       .innerJoin(tenants, eq(tenants.id, tenantMembers.tenantId))
@@ -221,8 +227,21 @@ export const tenantRouter = router({
     return limits.maxOwnedOrgs === Infinity || ownedOrgs.length < limits.maxOwnedOrgs;
   }),
 
-  // List user's tenant memberships
+  // List user's tenant memberships (platform owner sees all active orgs as owner)
   list: protectedProcedure.query(async ({ ctx }) => {
+    if (isPlatformOwner(ctx.user)) {
+      const allTenants = await controlDb.select({
+        tenantId: tenants.id,
+        role: sql<string>`'owner'`,
+        tenantName: tenants.name,
+        tenantSlug: tenants.slug,
+        tenantPlan: tenants.plan,
+      })
+        .from(tenants)
+        .where(eq(tenants.status, "active"));
+      return allTenants;
+    }
+
     const memberships = await controlDb.select({
       tenantId: tenantMembers.tenantId,
       role: tenantMembers.role,
@@ -303,17 +322,19 @@ export const tenantRouter = router({
   select: protectedProcedure
     .input(z.object({ tenantId: z.string().uuid() }))
     .mutation(async ({ input, ctx }) => {
-      // Verify user is a member of this tenant
-      const [membership] = await controlDb.select({ id: tenantMembers.id })
-        .from(tenantMembers)
-        .where(and(
-          eq(tenantMembers.tenantId, input.tenantId),
-          eq(tenantMembers.userId, ctx.user.id),
-        ))
-        .limit(1);
+      // Verify user is a member of this tenant (platform owner can select any tenant)
+      if (!isPlatformOwner(ctx.user)) {
+        const [membership] = await controlDb.select({ id: tenantMembers.id })
+          .from(tenantMembers)
+          .where(and(
+            eq(tenantMembers.tenantId, input.tenantId),
+            eq(tenantMembers.userId, ctx.user.id),
+          ))
+          .limit(1);
 
-      if (!membership) {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Not a member of this organization" });
+        if (!membership) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Not a member of this organization" });
+        }
       }
 
       // Get session ID from cookie or Bearer token (mobile uses Bearer)

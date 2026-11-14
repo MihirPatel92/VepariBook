@@ -7,6 +7,7 @@ import { defineAbilityFor, mapDbRole, type AppAbility } from "./lib/permissions.
 import { getMaintenanceStatus } from "./lib/maintenance-cache.js";
 import { assertActiveMembership } from "./lib/tenant-access.js";
 import { getBusinessAccess, getMembership, authzDenialError } from "./lib/authz.js";
+import { isPlatformOwner } from "./lib/platform-owner.js";
 
 // ── Middleware context shape interfaces ────────────────────────
 // These represent the enriched context after each middleware runs.
@@ -138,9 +139,7 @@ const hasTenantAccess = t.middleware(async ({ ctx, next }) => {
     });
   }
 
-  // The session/API key remembers a tenantId from when it was issued; make sure
-  // the user is still a member of an active tenant.
-  await assertActiveMembership(ctx.tenantId, ctx.user.id);
+  await assertActiveMembership(ctx.tenantId, ctx.user.id, ctx.user);
 
   return next({
     ctx: {
@@ -164,7 +163,7 @@ const hasBusinessAccess = t.middleware(async ({ ctx, next }) => {
   // Business exists in this tenant's database AND its creator is (still) a
   // member of the caller's tenant (critical in self-hosted mode where all
   // tenants share one DB). Cached positive-only (lib/authz.ts).
-  const access = await getBusinessAccess((ctx as unknown as TenantCtx).db, ctx.tenantId as string, ctx.businessId);
+  const access = await getBusinessAccess((ctx as unknown as TenantCtx).db, ctx.tenantId as string, ctx.businessId, ctx.user);
   if (!access.ok) {
     if (process.env.NODE_ENV === "development") console.log("[hasBusinessAccess] FAIL:", access.reason, "businessId:", ctx.businessId, "tenantId:", ctx.tenantId);
     throw authzDenialError(access.reason);
@@ -190,6 +189,21 @@ function withPermissions() {
     const user = ctx.user as NonNullable<Context["user"]>;
     const tenantId = ctx.tenantId as string;
     const businessId = ctx.businessId as string;
+
+    // Platform owner always has overarching superadmin capabilities on any business
+    if (isPlatformOwner(user)) {
+      const ability = defineAbilityFor({ userId: user.id, role: "superadmin" });
+      return next({
+        ctx: {
+          ...ctx,
+          user,
+          tenantId,
+          businessId,
+          role: "superadmin",
+          ability,
+        },
+      });
+    }
 
     // Same cached, positive-only membership the tenant middleware used; the
     // role is re-read per procedure so a role change applies to the next call.

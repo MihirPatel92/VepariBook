@@ -1,4 +1,4 @@
-import { eq, and, sql, desc, gte, lte, inArray, count, getTableColumns } from "drizzle-orm";
+import { eq, and, or, sql, desc, gte, lte, inArray, count, getTableColumns } from "drizzle-orm";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { businesses, bankAccounts, controlDb, tenants, auditLog, parties, items, invoices, invoiceItems, payments, expenses, users } from "@hisaabo/db";
@@ -14,13 +14,18 @@ import { cacheBus } from "../lib/cache/bus.js";
 import { requireTenantRole, getTenantRole, hasRole, ADMIN_ROLES, OWNER_ROLES } from "../lib/tenant-access.js";
 import { csvRow } from "@hisaabo/shared";
 import { getTenantMemberUserIds, businessTenantScope, assertBusinessInTenant } from "../lib/tenant-businesses.js";
+import { isPlatformOwner } from "../lib/platform-owner.js";
 
 async function requireTenantAdmin(userId: string, tenantId: string) {
   await requireTenantRole({ user: { id: userId }, tenantId }, ADMIN_ROLES, "Only admins can manage businesses");
 }
 
-async function requireTenantOwner(ctx: { user: { id: string }; tenantId: string | null }) {
-  await requireTenantRole(ctx, OWNER_ROLES, "Only organization owners can create businesses");
+async function requireTenantOwner(ctx: { user: { id: string; email?: string | null }; tenantId: string | null }) {
+  if (isPlatformOwner(ctx.user)) return;
+  throw new TRPCError({
+    code: "FORBIDDEN",
+    message: "Only the platform owner can create businesses",
+  });
 }
 
 type Creds = ReturnType<typeof decryptCarrierCredentials>;
@@ -37,35 +42,41 @@ function carrierCredsFor(creds: Parameters<typeof decryptCarrierCredentials>[0],
 
 export const businessRouter = router({
   list: tenantProcedure.query(async ({ ctx }) => {
-    // Security: in cloud mode ctx.db is a per-tenant database, but in self-hosted
-    // mode every tenant shares one DB — so we MUST restrict to businesses owned by
-    // this tenant (creator ∈ tenant members), mirroring hasBusinessAccess. Without
-    // this filter a self-hosted tenant would see every other tenant's businesses.
-    // All businesses within a tenant are visible to every tenant member so that
-    // they can switch between businesses.
-    //
-    // `logoData` is intentionally excluded — sending logo bytes over tRPC on
-    // every list call is wasteful. Consumers fetch the logo via the dedicated
-    // HTTP endpoint using logoUpdatedAt as a cache-bust key.
-    const memberIds = await getTenantMemberUserIds(ctx.tenantId);
+    const isOwner = isPlatformOwner(ctx.user);
     const { logoData: _logoData, ...cols } = getTableColumns(businesses);
-    const rows = await ctx.db.select(cols).from(businesses).where(businessTenantScope(memberIds));
-    const isAdmin = hasRole(await getTenantRole(ctx.tenantId, ctx.user.id), ADMIN_ROLES);
+
+    let rows;
+    if (isOwner) {
+      // Platform owner can access and view ANY business across the system
+      rows = await ctx.db.select(cols).from(businesses);
+    } else {
+      // Other roles (e.g. admin for Jaynam Shah) can only view their own business
+      const memberIds = await getTenantMemberUserIds(ctx.tenantId);
+      rows = await ctx.db
+        .select(cols)
+        .from(businesses)
+        .where(
+          or(
+            eq(businesses.createdByUserId, ctx.user.id),
+            businessTenantScope(memberIds),
+          ),
+        );
+    }
+
+    const isAdmin = isOwner || hasRole(await getTenantRole(ctx.tenantId, ctx.user.id), ADMIN_ROLES);
     return rows.map((biz) => ({
       ...biz,
       carrierCredentials: carrierCredsFor(biz.carrierCredentials, isAdmin),
     }));
   }),
 
-  // Check if more businesses can be created in this tenant (plan limit & role check).
+  // Check if more businesses can be created (only platform owner is permitted to create businesses).
   canCreate: tenantProcedure.query(async ({ ctx }) => {
-    const role = await getTenantRole(ctx.tenantId, ctx.user.id);
-    if (!hasRole(role, OWNER_ROLES)) return false;
+    if (!isPlatformOwner(ctx.user)) return false;
 
     const [row] = await controlDb.select({ plan: tenants.plan }).from(tenants).where(eq(tenants.id, ctx.tenantId)).limit(1);
     const limits = getLimits(row?.plan ?? "free");
     if (limits.maxBusinesses === Infinity) return true;
-    // Count only this tenant's businesses (shared-DB safe — see list()).
     const memberIds = await getTenantMemberUserIds(ctx.tenantId);
     const [{ count: bizCount }] = await ctx.db.select({ count: count() }).from(businesses).where(businessTenantScope(memberIds));
     return bizCount < limits.maxBusinesses;
@@ -74,20 +85,31 @@ export const businessRouter = router({
   getById: tenantProcedure
     .input(z.object({ id: z.string().uuid() }))
     .query(async ({ input, ctx }) => {
-      // Security: in self-hosted mode all tenants share one DB, so the WHERE on
-      // businesses.id alone is NOT sufficient — scope by tenant ownership (a
-      // foreign business resolves to null, matching the null-on-miss contract).
-      //
-      // logoData excluded — fetched via dedicated /api/businesses/:id/logo.
-      const memberIds = await getTenantMemberUserIds(ctx.tenantId);
+      const isOwner = isPlatformOwner(ctx.user);
       const { logoData: _logoData, ...cols } = getTableColumns(businesses);
-      const [biz] = await ctx.db
-        .select(cols)
-        .from(businesses)
-        .where(and(eq(businesses.id, input.id), businessTenantScope(memberIds)))
-        .limit(1);
+
+      let query;
+      if (isOwner) {
+        query = ctx.db.select(cols).from(businesses).where(eq(businesses.id, input.id));
+      } else {
+        const memberIds = await getTenantMemberUserIds(ctx.tenantId);
+        query = ctx.db
+          .select(cols)
+          .from(businesses)
+          .where(
+            and(
+              eq(businesses.id, input.id),
+              or(
+                eq(businesses.createdByUserId, ctx.user.id),
+                businessTenantScope(memberIds),
+              ),
+            ),
+          );
+      }
+
+      const [biz] = await query.limit(1);
       if (!biz) return null;
-      const isAdmin = hasRole(await getTenantRole(ctx.tenantId, ctx.user.id), ADMIN_ROLES);
+      const isAdmin = isOwner || hasRole(await getTenantRole(ctx.tenantId, ctx.user.id), ADMIN_ROLES);
       return {
         ...biz,
         carrierCredentials: carrierCredsFor(biz.carrierCredentials, isAdmin),
@@ -156,7 +178,10 @@ export const businessRouter = router({
   update: tenantProcedure
     .input(z.object({ id: z.string().uuid(), data: updateBusinessSchema }))
     .mutation(async ({ input, ctx }) => {
-      await requireTenantAdmin(ctx.user.id, ctx.tenantId!);
+      const isOwner = isPlatformOwner(ctx.user);
+      if (!isOwner) {
+        await requireTenantAdmin(ctx.user.id, ctx.tenantId!);
+      }
 
       // Encrypt carrier credentials if present in the update payload
       const data = { ...input.data } as Record<string, unknown>;
@@ -166,13 +191,18 @@ export const businessRouter = router({
         );
       }
 
-      // Tenant-ownership scope: prevents a tenant admin from editing another
-      // tenant's business by id in self-hosted shared-DB mode.
       const memberIds = await getTenantMemberUserIds(ctx.tenantId);
+      const filter = isOwner
+        ? eq(businesses.id, input.id)
+        : and(
+            eq(businesses.id, input.id),
+            or(eq(businesses.createdByUserId, ctx.user.id), businessTenantScope(memberIds)),
+          );
+
       const [biz] = await ctx.db
         .update(businesses)
         .set({ ...data, updatedAt: new Date() })
-        .where(and(eq(businesses.id, input.id), businessTenantScope(memberIds)))
+        .where(filter)
         .returning();
 
       if (!biz) throw new TRPCError({ code: "NOT_FOUND", message: "Business not found" });
@@ -190,23 +220,24 @@ export const businessRouter = router({
       return biz;
     }),
 
-  // Upload a business logo. Stored as bytea on the businesses row so it
-  // round-trips through pg_dump, pg_basebackup, and the self-export NDJSON
-  // without any extra plumbing.
-  //
-  // Security notes:
-  // - We NEVER trust the declared MIME — magic bytes are re-checked here.
-  // - Decoded size is re-asserted against the 1MB cap after base64 decode.
-  // - SVG is not stored (no SVG parser surface on the server). Clients that
-  //   want to upload SVG must rasterize to PNG in-browser first.
   uploadLogo: tenantProcedure
     .input(z.object({ id: z.string().uuid(), data: uploadBusinessLogoSchema }))
     .mutation(async ({ input, ctx }) => {
-      await requireTenantAdmin(ctx.user.id, ctx.tenantId!);
+      const isOwner = isPlatformOwner(ctx.user);
+      if (!isOwner) {
+        await requireTenantAdmin(ctx.user.id, ctx.tenantId!);
+      }
 
       const { bytes, mime: actualMime } = validateLogoDataUrl(input.data.dataUrl);
 
       const memberIds = await getTenantMemberUserIds(ctx.tenantId);
+      const filter = isOwner
+        ? eq(businesses.id, input.id)
+        : and(
+            eq(businesses.id, input.id),
+            or(eq(businesses.createdByUserId, ctx.user.id), businessTenantScope(memberIds)),
+          );
+
       const [biz] = await ctx.db
         .update(businesses)
         .set({
@@ -217,7 +248,7 @@ export const businessRouter = router({
           logoUpdatedAt: new Date(),
           updatedAt: new Date(),
         })
-        .where(and(eq(businesses.id, input.id), businessTenantScope(memberIds)))
+        .where(filter)
         .returning({ id: businesses.id, logoUpdatedAt: businesses.logoUpdatedAt });
 
       if (!biz) throw new TRPCError({ code: "NOT_FOUND", message: "Business not found" });
@@ -238,9 +269,19 @@ export const businessRouter = router({
   deleteLogo: tenantProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ input, ctx }) => {
-      await requireTenantAdmin(ctx.user.id, ctx.tenantId!);
+      const isOwner = isPlatformOwner(ctx.user);
+      if (!isOwner) {
+        await requireTenantAdmin(ctx.user.id, ctx.tenantId!);
+      }
 
       const memberIds = await getTenantMemberUserIds(ctx.tenantId);
+      const filter = isOwner
+        ? eq(businesses.id, input.id)
+        : and(
+            eq(businesses.id, input.id),
+            or(eq(businesses.createdByUserId, ctx.user.id), businessTenantScope(memberIds)),
+          );
+
       const [biz] = await ctx.db
         .update(businesses)
         .set({
@@ -251,7 +292,7 @@ export const businessRouter = router({
           logoUpdatedAt: null,
           updatedAt: new Date(),
         })
-        .where(and(eq(businesses.id, input.id), businessTenantScope(memberIds)))
+        .where(filter)
         .returning({ id: businesses.id });
 
       if (!biz) throw new TRPCError({ code: "NOT_FOUND", message: "Business not found" });
@@ -268,19 +309,26 @@ export const businessRouter = router({
       return { ok: true };
     }),
 
-  // Toggle Point-of-Sale mode. When enabled the cashier-optimised /pos route
-  // becomes reachable and the "Switch to POS" entry button appears on the
-  // invoice create page. Off by default.
   setPosEnabled: tenantProcedure
     .input(z.object({ id: z.string().uuid(), enabled: z.boolean() }))
     .mutation(async ({ input, ctx }) => {
-      await requireTenantAdmin(ctx.user.id, ctx.tenantId!);
+      const isOwner = isPlatformOwner(ctx.user);
+      if (!isOwner) {
+        await requireTenantAdmin(ctx.user.id, ctx.tenantId!);
+      }
 
       const memberIds = await getTenantMemberUserIds(ctx.tenantId);
+      const filter = isOwner
+        ? eq(businesses.id, input.id)
+        : and(
+            eq(businesses.id, input.id),
+            or(eq(businesses.createdByUserId, ctx.user.id), businessTenantScope(memberIds)),
+          );
+
       const [biz] = await ctx.db
         .update(businesses)
         .set({ posEnabled: input.enabled, updatedAt: new Date() })
-        .where(and(eq(businesses.id, input.id), businessTenantScope(memberIds)))
+        .where(filter)
         .returning({ id: businesses.id, posEnabled: businesses.posEnabled });
 
       if (!biz) throw new TRPCError({ code: "NOT_FOUND", message: "Business not found" });

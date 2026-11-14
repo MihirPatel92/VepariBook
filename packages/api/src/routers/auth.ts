@@ -16,6 +16,7 @@ import { logSecurityEvent } from "../lib/logger.js";
 import { getTrustedClientIp } from "../lib/client-ip.js";
 import { normalizeEmail, emailEq } from "../lib/normalize-email.js";
 import { isMultiTenant, isOpenSignupEnabled, hasPendingInvitation, enforceSelfHostedSignup } from "../lib/signup-policy.js";
+import { isPlatformOwner } from "../lib/platform-owner.js";
 import {
   NATIVE_REQUEST_TTL_MS,
   NATIVE_CODE_TTL_MS,
@@ -133,7 +134,7 @@ async function createTenantForUser(
   await tx.insert(tenantMembers).values({
     tenantId: tenant.id,
     userId,
-    role: "owner",
+    role: "admin",
     acceptedAt: new Date(),
   });
 
@@ -1143,6 +1144,9 @@ export const authRouter = router({
 
     let tenantName: string | null = null;
     let role: string | null = null;
+    if (isPlatformOwner(ctx.user)) {
+      role = "owner";
+    }
     if (ctx.tenantId) {
       const [t] = await controlDb
         .select({ name: tenants.name })
@@ -1151,15 +1155,17 @@ export const authRouter = router({
         .limit(1);
       tenantName = t?.name ?? null;
 
-      const [membership] = await controlDb
-        .select({ role: tenantMembers.role })
-        .from(tenantMembers)
-        .where(and(
-          eq(tenantMembers.tenantId, ctx.tenantId),
-          eq(tenantMembers.userId, ctx.user.id),
-        ))
-        .limit(1);
-      role = membership?.role ?? null;
+      if (!role) {
+        const [membership] = await controlDb
+          .select({ role: tenantMembers.role })
+          .from(tenantMembers)
+          .where(and(
+            eq(tenantMembers.tenantId, ctx.tenantId),
+            eq(tenantMembers.userId, ctx.user.id),
+          ))
+          .limit(1);
+        role = membership?.role ?? null;
+      }
     }
 
     return { user: ctx.user, tenantId: ctx.tenantId, tenantName, role, needsProfile: !ctx.user.name };

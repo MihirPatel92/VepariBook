@@ -24,6 +24,7 @@ import { controlDb, tenants, tenantMembers, businesses, type TenantDatabase } fr
 import { eq, and } from "drizzle-orm";
 import { TtlCache } from "./cache/ttl-cache.js";
 import { cacheBus } from "./cache/bus.js";
+import { isPlatformOwner } from "./platform-owner.js";
 
 export interface Membership {
   role: string;
@@ -116,7 +117,19 @@ export async function getBusinessAccess(
   db: TenantDatabase,
   tenantId: string,
   businessId: string,
+  user?: { id: string; email?: string | null } | null,
 ): Promise<{ ok: true; createdByUserId: string } | { ok: false; reason: "business_not_found" | "creator_not_member" }> {
+  // Platform owner has universal access to ANY business across the system
+  if (user && isPlatformOwner(user)) {
+    const [row] = await db
+      .select({ createdByUserId: businesses.createdByUserId })
+      .from(businesses)
+      .where(eq(businesses.id, businessId))
+      .limit(1);
+    if (!row) return { ok: false, reason: "business_not_found" };
+    return { ok: true, createdByUserId: row.createdByUserId };
+  }
+
   const biz = await businessCache.getOrLoad(
     `${tenantId}:${businessId}`,
     async () => {
@@ -130,6 +143,12 @@ export async function getBusinessAccess(
     { tags: [`tenant:${tenantId}`, `business:${businessId}`] },
   );
   if (!biz) return { ok: false, reason: "business_not_found" };
+
+  // Direct creator of the business always has access
+  if (user && biz.createdByUserId === user.id) {
+    return { ok: true, createdByUserId: biz.createdByUserId };
+  }
+
   // Re-evaluated every call (cached positive membership, 0 queries when warm).
   const creator = await getMembership(tenantId, biz.createdByUserId);
   if (!creator) return { ok: false, reason: "creator_not_member" };

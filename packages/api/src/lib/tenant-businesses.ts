@@ -47,19 +47,30 @@ export function businessTenantScope(memberUserIds: string[]) {
   return inArray(businesses.createdByUserId, memberUserIds);
 }
 
+import { isPlatformOwner } from "./platform-owner.js";
+
 /**
  * Asserts that `businessId` belongs to `tenantId`, throwing NOT_FOUND otherwise.
- *
- * NOT_FOUND (not FORBIDDEN) is deliberate: it avoids disclosing the existence of
- * a business in another tenant. Use this in procedures that take the business id
- * from input but cannot fold the ownership predicate into their main query
- * (e.g. when the primary table is `parties`, not `businesses`).
+ * Platform owner can access any business in the system.
  */
 export async function assertBusinessInTenant(
   db: TenantDatabase,
   tenantId: string,
   businessId: string,
+  user?: { id: string; email?: string | null } | null,
 ): Promise<void> {
+  if (user && isPlatformOwner(user)) {
+    const [biz] = await db
+      .select({ id: businesses.id })
+      .from(businesses)
+      .where(eq(businesses.id, businessId))
+      .limit(1);
+    if (!biz) {
+      throw new TRPCError({ code: "NOT_FOUND", message: "Business not found" });
+    }
+    return;
+  }
+
   const memberIds = await getTenantMemberUserIds(tenantId);
   const [biz] = await db
     .select({ id: businesses.id })

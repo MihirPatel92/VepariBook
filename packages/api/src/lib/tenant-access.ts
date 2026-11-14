@@ -20,15 +20,18 @@ export async function getTenantRole(tenantId: string, userId: string): Promise<s
   return m?.role ?? null;
 }
 
+import { isPlatformOwner } from "./platform-owner.js";
+
 /**
  * Single role gate for tenant-level operations. Returns the caller's role or
  * throws FORBIDDEN when they are not a member or hold none of `roles`.
  */
 export async function requireTenantRole(
-  ctx: { user: { id: string }; tenantId: string | null },
+  ctx: { user: { id: string; email?: string | null }; tenantId: string | null },
   roles: readonly string[],
   message = "You do not have permission to perform this action",
 ): Promise<string> {
+  if (isPlatformOwner(ctx.user)) return "owner";
   if (!ctx.tenantId) {
     throw new TRPCError({ code: "BAD_REQUEST", message: "No organization selected" });
   }
@@ -40,11 +43,15 @@ export async function requireTenantRole(
 }
 
 /**
- * Throws FORBIDDEN unless the user is a member of an active tenant. Sessions
- * and API keys carry a tenantId that was valid when issued; this re-validates
- * it per request from the positive-only authz cache (lib/authz.ts).
+ * Throws FORBIDDEN unless the user is a member of an active tenant.
+ * Platform owner always has active membership across any tenant.
  */
-export async function assertActiveMembership(tenantId: string, userId: string): Promise<void> {
+export async function assertActiveMembership(
+  tenantId: string,
+  userId: string,
+  user?: { id: string; email?: string | null } | null,
+): Promise<void> {
+  if (user && isPlatformOwner(user)) return;
   const r = await getActiveMembership(tenantId, userId);
   if (!r.ok) throw authzDenialError(r.reason);
 }
