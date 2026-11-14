@@ -1,0 +1,34 @@
+# Render Blueprint Specification for Vrunda Infotech (VepariBook)
+# Learn more at https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: veparibook
+    runtime: node
+    plan: free
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm run build:prod
+    startCommand: node packages/db/dist/migrate.mjs && node packages/api/dist/bin/seed.js && node packages/api/dist/server.js
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: MULTI_TENANT
+        value: "false"
+      - key: JWT_SECRET
+        generateValue: true
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: ADMIN_EMAIL
+        value: Contact@vrundainfotech.com
+      - key: ADMIN_PASSWORD
+        value: Vrunda@1995
+      - key: ADMIN_NAME
+        value: Vrunda Infotech
+      - key: CORS_ORIGINS
+        value: "http://localhost:5173"
+      - key: APP_URL
+        sync: false
