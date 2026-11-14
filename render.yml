@@ -6,7 +6,7 @@ services:
     name: veparibook
     runtime: node
     plan: free
-    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm run build:prod
+    buildCommand: pnpm install --frozen-lockfile && pnpm run build:prod
     startCommand: node packages/db/dist/migrate.mjs && node packages/api/dist/bin/seed.js && node packages/api/dist/server.js
     healthCheckPath: /health
     envVars:
